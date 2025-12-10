@@ -3,395 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Textil Innova | Configurador de Polos</title>
+    <title>Textil AI | Realismo Aumentado</title>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
     
     <style>
         :root {
-            --primary: #222;
-            --secondary: #555;
-            --accent: #0056b3;
-            --bg: #f8f9fa;
+            --dark: #1a1a1a;
+            --light: #ffffff;
+            --ai-color: #8e44ad; /* Morado para denotar IA */
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             margin: 0;
-            padding: 20px;
-            background-color: var(--bg);
-            color: var(--primary);
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 1.8rem;
-        }
-        header p { color: var(--secondary); }
-
-        /* Layout principal: Visor a la izquierda, controles a la derecha (en desktop) */
-        .configurator-layout {
+            background-color: #f4f4f4;
             display: flex;
             flex-direction: column;
-            gap: 30px;
+            height: 100vh;
         }
 
-        @media (min-width: 768px) {
-            .configurator-layout {
-                flex-direction: row;
-                align-items: start;
-            }
-        }
-
-        /* Estilos del Visor 3D */
-        .viewer-container {
-            flex: 3;
-            background: #eee;
-            border-radius: 12px;
-            overflow: hidden;
-            height: 400px; /* Altura fija para móvil */
-        }
-
-        @media (min-width: 768px) {
-            .viewer-container { height: 500px; }
+        /* VISOR 3D */
+        #ar-container {
+            flex: 1;
+            position: relative;
+            background: linear-gradient(to bottom, #dcdcdc, #fff);
         }
 
         model-viewer {
             width: 100%;
             height: 100%;
-            --poster-color: #eee;
+            --poster-color: transparent;
         }
 
-        /* Botón AR personalizado */
-        .ar-button {
-            background-color: var(--accent);
-            color: white;
-            border-radius: 30px;
-            border: none;
+        /* Botón Flotante de IA */
+        #ai-toggle {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 24px;
-            font-weight: 600;
-            font-size: 14px;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 25px;
+            border: 2px solid var(--ai-color);
+            color: var(--ai-color);
+            font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,86,179,0.3);
+            box-shadow: 0 4px 15px rgba(142, 68, 173, 0.2);
             display: flex;
             align-items: center;
             gap: 8px;
+            z-index: 100;
+            transition: all 0.3s;
         }
 
-        /* Estilos del Panel de Controles */
-        .controls-panel {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-            padding: 10px;
+        #ai-toggle:hover {
+            background: var(--ai-color);
+            color: white;
         }
 
-        .control-group h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--secondary);
+        #ai-toggle.active {
+            background: var(--ai-color);
+            color: white;
+            box-shadow: 0 0 20px rgba(142, 68, 173, 0.6);
         }
 
-        /* Estilos para los selectores visuales (radio buttons disfrazados) */
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 10px;
-        }
-
-        .option-input {
-            display: none; /* Ocultar el radio button real */
-        }
-
-        .option-label {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 15px 10px;
-            background: var(--bg);
-            border: 2px solid transparent;
+        /* Notificación de carga */
+        #loading-badge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px 30px;
             border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-            font-size: 0.9rem;
-            font-weight: 500;
+            display: none;
+            z-index: 200;
         }
 
-        .option-label span.icon {
-            font-size: 1.5rem;
-            margin-bottom: 8px;
-        }
-
-        /* Estado seleccionado */
-        .option-input:checked + .option-label {
-            border-color: var(--accent);
+        /* PANEL INFERIOR */
+        #controls {
             background: white;
-            box-shadow: 0 4px 12px rgba(0,86,179,0.15);
-            color: var(--accent);
+            padding: 20px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
         }
 
-        /* Sección de información de la tela */
-        #fabric-info {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #e9ecef;
-            border-radius: 8px;
-            font-size: 0.9rem;
+        .swatch-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 10px;
         }
-        #fabric-info h4 { margin: 0 0 5px 0; }
+
+        .swatch {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #ddd;
+            background-size: cover;
+            transition: transform 0.2s;
+        }
+
+        .swatch:hover { transform: scale(1.1); }
+        .swatch.selected { border-color: var(--ai-color); border-width: 3px; transform: scale(1.1); }
+
+        h3 { text-align: center; margin: 0 0 10px 0; font-size: 1rem; color: #555; }
+        
+        /* Botón AR inferior */
+        .ar-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 30px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>Configurador de Prototipos: Polo T-Shirt</h1>
-            <p>Selecciona tela y patrón para visualizar en Realidad Aumentada.</p>
-        </header>
+    <div id="ar-container">
+        <div id="loading-badge">🤖 IA Mejorando Texturas...</div>
 
-        <div class="configurator-layout">
+        <button id="ai-toggle" onclick="toggleAI()">
+            ✨ IA: Realismo OFF
+        </button>
+
+        <model-viewer 
+            id="viewer"
+            src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+            ios-src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+            alt="Prototipo Textil"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+            camera-controls
+            shadow-intensity="1"
+            shadow-softness="0.8"
+            tone-mapping="commerce"
+            environment-image="neutral" 
+            auto-rotate>
+        </model-viewer>
+    </div>
+
+    <div id="controls">
+        <h3>Selecciona Textura Base</h3>
+        <div class="swatch-container">
+            <div class="swatch selected" 
+                 style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Synthese%2B.jpg/320px-Synthese%2B.jpg');"
+                 onclick="applyBaseTexture('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Synthese%2B.jpg/320px-Synthese%2B.jpg', this)">
+            </div>
             
-            <div class="viewer-container">
-                <model-viewer 
-                    id="main-viewer"
-                    src="" 
-                    ios-src=""
-                    alt="Prototipo de Polo"
-                    ar
-                    ar-modes="webxr scene-viewer quick-look"
-                    camera-controls
-                    auto-rotate
-                    shadow-intensity="1"
-                    environment-image="neutral"
-                >
-                    <button slot="ar-button" class="ar-button">
-                       📱 Ver en tu espacio (AR)
-                    </button>
-                </model-viewer>
+            <div class="swatch" 
+                 style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Jeans_fabric_texture.jpg/320px-Jeans_fabric_texture.jpg');"
+                 onclick="applyBaseTexture('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Jeans_fabric_texture.jpg/320px-Jeans_fabric_texture.jpg', this)">
             </div>
 
-            <div class="controls-panel">
-                
-                <div class="control-group">
-                    <h3>1. Tipo de Tela</h3>
-                    <div class="options-grid" id="fabric-selector">
-                        </div>
-                </div>
-
-                <div class="control-group">
-                   <h3>2. Patrón de Diseño</h3>
-                   <div class="options-grid" id="pattern-selector">
-                        </div>
-                </div>
-
-                <div id="fabric-info" style="display: none;">
-                     <h4>Detalles Técnicos:</h4>
-                     <p id="info-text"></p>
-                 </div>
+            <div class="swatch" 
+                 style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Pattern_of_split_log_stack.jpg/320px-Pattern_of_split_log_stack.jpg');"
+                 onclick="applyBaseTexture('https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Pattern_of_split_log_stack.jpg/320px-Pattern_of_split_log_stack.jpg', this)">
             </div>
         </div>
     </div>
 
-
     <script>
-        // =============================================
-        // BASE DE DATOS SIMULADA DE TELAS Y PATRONES
-        // =============================================
-        // IMPORTANTE: Como no tengo 6 modelos de polos reales, 
-        // estoy usando modelos GLB públicos de ejemplo (sillas, astronautas)
-        // como "PLACEHOLDERS" para mostrar que el modelo cambia.
-        // En tu versión final, reemplazarás estas URLs por las de tus polos.
+        const viewer = document.getElementById('viewer');
+        const aiButton = document.getElementById('ai-toggle');
+        const loader = document.getElementById('loading-badge');
         
-        const productData = {
-            fabrics: [
-                {
-                    id: 'algodon',
-                    name: 'Algodón Pima 50/1',
-                    icon: '☁️',
-                    description: 'Tejido de punto jersey, tacto muy suave, caída ligera. Ideal para prendas premium.',
-                    patterns: [
-                        { 
-                            id: 'a_rayas', 
-                            name: 'Rayas Navales', 
-                            // PLACEHOLDER URL: Reemplazar con tu modelo ej: 'assets/polo_algodon_rayas.glb'
-                            modelUrl: 'https://modelviewer.dev/shared-assets/models/Astronaut.glb' 
-                        },
-                        { 
-                            id: 'a_floral', 
-                            name: 'Estampado Liberty', 
-                            // PLACEHOLDER URL
-                            modelUrl: 'https://modelviewer.dev/shared-assets/models/chair-swing.glb' 
-                        }
-                    ]
-                },
-                {
-                    id: 'deportivo',
-                    name: 'Poliéster Dry-Fit',
-                    icon: '🏃',
-                    description: 'Malla técnica con microperforaciones. Absorción rápida de humedad y alta elasticidad.',
-                    patterns: [
-                         { 
-                            id: 'd_camu', 
-                            name: 'Camuflaje Urbano', 
-                            // PLACEHOLDER URL
-                            modelUrl: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf' 
-                        },
-                        { 
-                            id: 'd_neon', 
-                            name: 'Geométrico Neón', 
-                             // PLACEHOLDER URL
-                            modelUrl: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Models/2.0/Buggy/glTF/Buggy.gltf'
-                        }
-                    ]
-                },
-                {
-                    id: 'lino',
-                    name: 'Lino Lavado',
-                    icon: '🌿',
-                    description: 'Tejido plano con textura rústica y natural. Fresco y con arrugas características.',
-                    patterns: [
-                        { 
-                            id: 'l_solido', 
-                            name: 'Beige Natural', 
-                             // PLACEHOLDER URL
-                            modelUrl: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Models/2.0/SheenChair/glTF-Binary/SheenChair.glb'
-                        },
-                        { 
-                            id: 'l_cuadros', 
-                            name: 'Cuadros Vichy', 
-                             // PLACEHOLDER URL
-                            modelUrl: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Models/2.0/Corset/glTF-Binary/Corset.glb'
-                        }
-                    ]
-                }
-            ]
+        let isAIEnabled = false;
+        let currentTextureUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Synthese%2B.jpg/320px-Synthese%2B.jpg'; // Textura inicial
+
+        // URL de un "Normal Map" genérico para telas.
+        // En una app real, la IA generaría un mapa específico para cada imagen.
+        // Este mapa simula hilos entrecruzados y relieve.
+        const AI_NORMAL_MAP_URL = 'https://raw.githubusercontent.com/google/model-viewer/master/packages/shared-assets/models/glTF-Sample-Models/2.0/DamagedHelmet/glTF/Default_normal.jpg'; 
+        // Usamos una textura rugosa genérica disponible online para el ejemplo
+        const FABRIC_NORMAL_MAP = "https://img.freepik.com/premium-photo/black-fabric-texture-background_1961-397.jpg"; // Placeholder para relieve
+
+        // Inicializar con la primera textura
+        window.onload = () => {
+            applyBaseTexture(currentTextureUrl, document.querySelector('.swatch'));
         };
 
-        // =============================================
-        // LÓGICA DEL APLICATIVO
-        // =============================================
-
-        const fabricSelectorContainer = document.getElementById('fabric-selector');
-        const patternSelectorContainer = document.getElementById('pattern-selector');
-        const mainViewer = document.getElementById('main-viewer');
-        const fabricInfoBox = document.getElementById('fabric-info');
-        const infoText = document.getElementById('info-text');
-
-        // Estado actual de la selección
-        let currentFabricId = null;
-        let currentPatternId = null;
-
-        // 1. Función para inicializar la interfaz (crear los botones de telas)
-        function initUI() {
-            // Generar opciones de tela
-            productData.fabrics.forEach((fabric, index) => {
-                const label = createRadioOption('fabric-option', fabric.id, fabric.name, fabric.icon, index === 0);
-                fabricSelectorContainer.appendChild(label);
-            });
-
-            // Listener para cambios en la selección de tela
-            fabricSelectorContainer.addEventListener('change', (e) => {
-                if (e.target.name === 'fabric-option') {
-                    selectFabric(e.target.value);
-                }
-            });
-
-            // Listener para cambios en la selección de patrón
-            patternSelectorContainer.addEventListener('change', (e) => {
-                if (e.target.name === 'pattern-option') {
-                    selectPattern(e.target.value);
-                }
-            });
-
-            // Seleccionar la primera tela por defecto al iniciar
-            selectFabric(productData.fabrics[0].id);
-        }
-
-
-        // 2. Lógica al seleccionar una TELA
-        function selectFabric(fabricId) {
-            currentFabricId = fabricId;
-            const selectedFabricData = productData.fabrics.find(f => f.id === fabricId);
+        // 1. Aplicar la textura visual (Color/Dibujo)
+        async function applyBaseTexture(url, element) {
+            currentTextureUrl = url;
             
-            // A. Actualizar información técnica
-            fabricInfoBox.style.display = 'block';
-            infoText.textContent = selectedFabricData.description;
+            // UI Update
+            document.querySelectorAll('.swatch').forEach(el => el.classList.remove('selected'));
+            if(element) element.classList.add('selected');
 
-            // B. Generar los botones de patrones disponibles para ESTA tela
-            patternSelectorContainer.innerHTML = ''; // Limpiar anteriores
-            selectedFabricData.patterns.forEach((pattern, index) => {
-                // Usamos un icono genérico de patrón 🎨
-                const label = createRadioOption('pattern-option', pattern.id, pattern.name, '🎨', index === 0);
-                patternSelectorContainer.appendChild(label);
-            });
-
-            // C. Seleccionar automáticamente el primer patrón de la nueva tela
-            selectPattern(selectedFabricData.patterns[0].id);
+            const texture = await viewer.createTexture(url);
+            const material = viewer.model.materials[0];
+            
+            if (material) {
+                material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
+                // Si la IA estaba encendida, re-aplicamos el efecto de realismo
+                if (isAIEnabled) applyAIRealism();
+            }
         }
 
+        // 2. Función del Botón "IA"
+        function toggleAI() {
+            isAIEnabled = !isAIEnabled;
+            const material = viewer.model.materials[0];
 
-        // 3. Lógica al seleccionar un PATRÓN (Aquí ocurre la magia de actualizar el 3D)
-        function selectPattern(patternId) {
-            currentPatternId = patternId;
-            const fabricData = productData.fabrics.find(f => f.id === currentFabricId);
-            const patternData = fabricData.patterns.find(p => p.id === patternId);
+            if (isAIEnabled) {
+                // SIMULACIÓN DE PROCESAMIENTO DE IA
+                loader.style.display = 'block';
+                aiButton.innerText = "⏳ Procesando...";
+                
+                setTimeout(() => {
+                    applyAIRealism();
+                    loader.style.display = 'none';
+                    aiButton.classList.add('active');
+                    aiButton.innerText = "✨ IA: Realismo ON";
+                }, 1000); // 1 segundo de "pensar" simulado
 
-            console.log(`Cargando modelo para: Tela ${fabricData.name}, Patrón ${patternData.name}`);
-
-            // ACTUALIZAR EL VISOR 3D
-            // Se asigna la URL del modelo correspondiente a la combinación seleccionada
-            mainViewer.src = patternData.modelUrl;
-            mainViewer.iosSrc = patternData.modelUrl; // En producción, esto sería un archivo .usdz diferente
+            } else {
+                // APAGAR REALISMO (Volver a plano)
+                material.pbrMetallicRoughness.normalTexture.setTexture(null);
+                material.pbrMetallicRoughness.setRoughnessFactor(0.5); // Valor por defecto
+                aiButton.classList.remove('active');
+                aiButton.innerText = "✨ IA: Realismo OFF";
+            }
         }
 
+        // 3. La Magia Técnica (Mapas de Normales)
+        async function applyAIRealism() {
+            const material = viewer.model.materials[0];
+            
+            // A. Creamos una textura de "Normales" (Profundidad)
+            // En un caso real, aquí llamarías a una API tipo "TextureCan" o "Samplers"
+            // Aquí usamos una textura de ruido para simular el tejido de la tela
+            const normalTexture = await viewer.createTexture("https://modelviewer.dev/shared-assets/models/glTF-Sample-Models/2.0/SciFiHelmet/glTF/SciFiHelmet_Normal.png");
+            
+            // B. Aplicamos el mapa de profundidad
+            material.pbrMetallicRoughness.normalTexture.setTexture(normalTexture);
+            
+            // C. Ajustamos la rugosidad (Roughness)
+            // Las telas reales no brillan como plástico (0) ni son 100% mate (1)
+            // La IA calcularía que el algodón es 0.8 aprox.
+            material.pbrMetallicRoughness.setRoughnessFactor(0.9);
 
-        // Helper: Función para crear el HTML de los botones de opción
-        function createRadioOption(groupName, value, text, icon, isChecked) {
-            const input = document.createElement('input');
-            input.type = 'radio';
-            input.name = groupName;
-            input.value = value;
-            input.id = `${groupName}-${value}`;
-            input.className = 'option-input';
-            if (isChecked) input.checked = true;
-
-            const label = document.createElement('label');
-            label.htmlFor = `${groupName}-${value}`;
-            label.className = 'option-label';
-            label.innerHTML = `<span class="icon">${icon}</span><span>${text}</span>`;
-
-            // Retornamos un fragmento que incluye el input y el label
-            const fragment = document.createDocumentFragment();
-            fragment.appendChild(input);
-            fragment.appendChild(label);
-            return fragment;
+            console.log("IA: Mapa de normales aplicado para simular tejido.");
         }
-
-        // Arrancar la aplicación
-        initUI();
 
     </script>
 </body>

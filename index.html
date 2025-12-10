@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Textil Innova | Configurador de Polos</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #222;
+            --secondary: #555;
+            --accent: #0056b3;
+            --bg: #f8f9fa;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg);
+            color: var(--primary);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+        header p { color: var(--secondary); }
+
+        /* Layout principal: Visor a la izquierda, controles a la derecha (en desktop) */
+        .configurator-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        @media (min-width: 768px) {
+            .configurator-layout {
+                flex-direction: row;
+                align-items: start;
+            }
+        }
+
+        /* Estilos del Visor 3D */
+        .viewer-container {
+            flex: 3;
+            background: #eee;
+            border-radius: 12px;
+            overflow: hidden;
+            height: 400px; /* Altura fija para móvil */
+        }
+
+        @media (min-width: 768px) {
+            .viewer-container { height: 500px; }
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            --poster-color: #eee;
+        }
+
+        /* Botón AR personalizado */
+        .ar-button {
+            background-color: var(--accent);
+            color: white;
+            border-radius: 30px;
+            border: none;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,86,179,0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Estilos del Panel de Controles */
+        .controls-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            padding: 10px;
+        }
+
+        .control-group h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--secondary);
+        }
+
+        /* Estilos para los selectores visuales (radio buttons disfrazados) */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+        }
+
+        .option-input {
+            display: none; /* Ocultar el radio button real */
+        }
+
+        .option-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 10px;
+            background: var(--bg);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .option-label span.icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        /* Estado seleccionado */
+        .option-input:checked + .option-label {
+            border-color: var(--accent);
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,86,179,0.15);
+            color: var(--accent);
+        }
+
+        /* Sección de información de la tela */
+        #fabric-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        #fabric-info h4 { margin: 0 0 5px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Configurador de Prototipos: Polo T-Shirt</h1>
+            <p>Selecciona tela y patrón para visualizar en Realidad Aumentada.</p>
+        </header>
+
+        <div class="configurator-layout">
+            
+            <div class="viewer-container">
+                <model-viewer 
+                    id="main-viewer"
+                    src="" 
+                    ios-src=""
+                    alt="Prototipo de Polo"
+                    ar
+                    ar-modes="webxr scene-viewer quick-look"
+                    camera-controls
+                    auto-rotate
+                    shadow-intensity="1"
+                    environment-image="neutral"
+                >
+                    <button slot="ar-button" class="ar-button">
+                       📱 Ver en tu espacio (AR)
+                    </button>
+                </model-viewer>
+            </div>
+
+            <div class="controls-panel">
+                
+                <div class="control-group">
+                    <h3>1. Tipo de Tela</h3>
+                    <div class="options-grid" id="fabric-selector">
+                        </div>
+                </div>
+
+                <div class="control-group">
+                   <h3>2. Patrón de Diseño</h3>
+                   <div class="options-grid" id="pattern-selector">
+                        </div>
+                </div>
+
+                <div id="fabric-info" style="display: none;">
+                     <h4>Detalles Técnicos:</h4>
+                     <p id="info-text"></p>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // =============================================
+        // BASE DE DATOS SIMULADA DE TELAS Y PATRONES
+        // =============================================
+        // IMPORTANTE: Como no tengo 6 modelos de polos reales, 
+        // estoy usando modelos GLB públicos de ejemplo (sillas, astronautas)
+        // como "PLACEHOLDERS" para mostrar que el modelo cambia.
+        // En tu versión final, reemplazarás estas URLs por las de tus polos.
+        
+        const productData = {
+            fabrics: [
+                {
+                    id: 'algodon',
+                    name: 'Algodón Pima 50/1',
+                    icon: '☁️',
+                    description: 'Tejido de punto jersey, tacto muy suave, caída ligera. Ideal para prendas premium.',
+                    patterns: [
+                        { 
+                            id: 'a_rayas', 
+                            name: 'Rayas Navales', 
+                            // PLACEHOLDER URL: Reemplazar con tu modelo ej: 'assets/polo_algodon_rayas.glb'
+                            modelUrl: 'https://modelviewer.dev/shared-assets/models/Astronaut.glb' 
+                        },
+                        { 
+                            id: 'a_floral', 
+                            name: 'Estampado Liberty', 
+                            // PLACEHOLDER URL
+                            modelUrl: 'https://modelviewer.dev/shared-assets/models/chair-swing.glb' 
+                        }
+                    ]
+                },
+                {
+                    id: 'deportivo',
+                    name: 'Poliéster Dry-Fit',
+                    icon: '🏃',
+                    description: 'Malla técnica con microperforaciones. Absorción rápida de humedad y alta elasticidad.',
+                    patterns: [
+                         { 
+                            id: 'd_camu', 
+                            name: 'Camuflaje Urbano', 
+                            // PLACEHOLDER URL
+                            modelUrl: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf' 
+                        },
+                        { 
+                            id: 'd_neon', 
+                            name: 'Geométrico Neón', 
+                             // PLACEHOLDER URL
+                            modelUrl: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Models/2.0/Buggy/glTF/Buggy.gltf'
+                        }
+                    ]
+                },
+                {
+                    id: 'lino',
+                    name: 'Lino Lavado',
+                    icon: '🌿',
+                    description: 'Tejido plano con textura rústica y natural. Fresco y con arrugas características.',
+                    patterns: [
+                        { 
+                            id: 'l_solido', 
+                            name: 'Beige Natural', 
+                             // PLACEHOLDER URL
+                            modelUrl: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Models/2.0/SheenChair/glTF-Binary/SheenChair.glb'
+                        },
+                        { 
+                            id: 'l_cuadros', 
+                            name: 'Cuadros Vichy', 
+                             // PLACEHOLDER URL
+                            modelUrl: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Models/2.0/Corset/glTF-Binary/Corset.glb'
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // =============================================
+        // LÓGICA DEL APLICATIVO
+        // =============================================
+
+        const fabricSelectorContainer = document.getElementById('fabric-selector');
+        const patternSelectorContainer = document.getElementById('pattern-selector');
+        const mainViewer = document.getElementById('main-viewer');
+        const fabricInfoBox = document.getElementById('fabric-info');
+        const infoText = document.getElementById('info-text');
+
+        // Estado actual de la selección
+        let currentFabricId = null;
+        let currentPatternId = null;
+
+        // 1. Función para inicializar la interfaz (crear los botones de telas)
+        function initUI() {
+            // Generar opciones de tela
+            productData.fabrics.forEach((fabric, index) => {
+                const label = createRadioOption('fabric-option', fabric.id, fabric.name, fabric.icon, index === 0);
+                fabricSelectorContainer.appendChild(label);
+            });
+
+            // Listener para cambios en la selección de tela
+            fabricSelectorContainer.addEventListener('change', (e) => {
+                if (e.target.name === 'fabric-option') {
+                    selectFabric(e.target.value);
+                }
+            });
+
+            // Listener para cambios en la selección de patrón
+            patternSelectorContainer.addEventListener('change', (e) => {
+                if (e.target.name === 'pattern-option') {
+                    selectPattern(e.target.value);
+                }
+            });
+
+            // Seleccionar la primera tela por defecto al iniciar
+            selectFabric(productData.fabrics[0].id);
+        }
+
+
+        // 2. Lógica al seleccionar una TELA
+        function selectFabric(fabricId) {
+            currentFabricId = fabricId;
+            const selectedFabricData = productData.fabrics.find(f => f.id === fabricId);
+            
+            // A. Actualizar información técnica
+            fabricInfoBox.style.display = 'block';
+            infoText.textContent = selectedFabricData.description;
+
+            // B. Generar los botones de patrones disponibles para ESTA tela
+            patternSelectorContainer.innerHTML = ''; // Limpiar anteriores
+            selectedFabricData.patterns.forEach((pattern, index) => {
+                // Usamos un icono genérico de patrón 🎨
+                const label = createRadioOption('pattern-option', pattern.id, pattern.name, '🎨', index === 0);
+                patternSelectorContainer.appendChild(label);
+            });
+
+            // C. Seleccionar automáticamente el primer patrón de la nueva tela
+            selectPattern(selectedFabricData.patterns[0].id);
+        }
+
+
+        // 3. Lógica al seleccionar un PATRÓN (Aquí ocurre la magia de actualizar el 3D)
+        function selectPattern(patternId) {
+            currentPatternId = patternId;
+            const fabricData = productData.fabrics.find(f => f.id === currentFabricId);
+            const patternData = fabricData.patterns.find(p => p.id === patternId);
+
+            console.log(`Cargando modelo para: Tela ${fabricData.name}, Patrón ${patternData.name}`);
+
+            // ACTUALIZAR EL VISOR 3D
+            // Se asigna la URL del modelo correspondiente a la combinación seleccionada
+            mainViewer.src = patternData.modelUrl;
+            mainViewer.iosSrc = patternData.modelUrl; // En producción, esto sería un archivo .usdz diferente
+        }
+
+
+        // Helper: Función para crear el HTML de los botones de opción
+        function createRadioOption(groupName, value, text, icon, isChecked) {
+            const input = document.createElement('input');
+            input.type = 'radio';
+            input.name = groupName;
+            input.value = value;
+            input.id = `${groupName}-${value}`;
+            input.className = 'option-input';
+            if (isChecked) input.checked = true;
+
+            const label = document.createElement('label');
+            label.htmlFor = `${groupName}-${value}`;
+            label.className = 'option-label';
+            label.innerHTML = `<span class="icon">${icon}</span><span>${text}</span>`;
+
+            // Retornamos un fragmento que incluye el input y el label
+            const fragment = document.createDocumentFragment();
+            fragment.appendChild(input);
+            fragment.appendChild(label);
+            return fragment;
+        }
+
+        // Arrancar la aplicación
+        initUI();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Textil AI | Realismo Aumentado</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    
+    <style>
+        :root {
+            --dark: #1a1a1a;
+            --light: #ffffff;
+            --ai-color: #8e44ad; /* Morado para denotar IA */
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* VISOR 3D */
+        #ar-container {
+            flex: 1;
+            position: relative;
+            background: linear-gradient(to bottom, #dcdcdc, #fff);
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            --poster-color: transparent;
+        }
+
+        /* Botón Flotante de IA */
+        #ai-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 25px;
+            border: 2px solid var(--ai-color);
+            color: var(--ai-color);
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(142, 68, 173, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+            transition: all 0.3s;
+        }
+
+        #ai-toggle:hover {
+            background: var(--ai-color);
+            color: white;
+        }
+
+        #ai-toggle.active {
+            background: var(--ai-color);
+            color: white;
+            box-shadow: 0 0 20px rgba(142, 68, 173, 0.6);
+        }
+
+        /* Notificación de carga */
+        #loading-badge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            display: none;
+            z-index: 200;
+        }
+
+        /* PANEL INFERIOR */
+        #controls {
+            background: white;
+            padding: 20px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+        }
+
+        .swatch-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .swatch {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #ddd;
+            background-size: cover;
+            transition: transform 0.2s;
+        }
+
+        .swatch:hover { transform: scale(1.1); }
+        .swatch.selected { border-color: var(--ai-color); border-width: 3px; transform: scale(1.1); }
+
+        h3 { text-align: center; margin: 0 0 10px 0; font-size: 1rem; color: #555; }
+        
+        /* Botón AR inferior */
+        .ar-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 30px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="ar-container">
+        <div id="loading-badge">🤖 IA Mejorando Texturas...</div>
+
+        <button id="ai-toggle" onclick="toggleAI()">
+            ✨ IA: Realismo OFF
+        </button>
+
+        <model-viewer 
+            id="viewer"
+            src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+            ios-src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+            alt="Prototipo Textil"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+            camera-controls
+            shadow-intensity="1"
+            shadow-softness="0.8"
+            tone-mapping="commerce"
+            environment-image="neutral" 
+            auto-rotate>
+        </model-viewer>
+    </div>
+
+    <div id="controls">
+        <h3>Selecciona Textura Base</h3>
+        <div class="swatch-container">
+            <div class="swatch selected" 
+                 style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Synthese%2B.jpg/320px-Synthese%2B.jpg');"
+                 onclick="applyBaseTexture('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Synthese%2B.jpg/320px-Synthese%2B.jpg', this)">
+            </div>
+            
+            <div class="swatch" 
+                 style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Jeans_fabric_texture.jpg/320px-Jeans_fabric_texture.jpg');"
+                 onclick="applyBaseTexture('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Jeans_fabric_texture.jpg/320px-Jeans_fabric_texture.jpg', this)">
+            </div>
+
+            <div class="swatch" 
+                 style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Pattern_of_split_log_stack.jpg/320px-Pattern_of_split_log_stack.jpg');"
+                 onclick="applyBaseTexture('https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Pattern_of_split_log_stack.jpg/320px-Pattern_of_split_log_stack.jpg', this)">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const viewer = document.getElementById('viewer');
+        const aiButton = document.getElementById('ai-toggle');
+        const loader = document.getElementById('loading-badge');
+        
+        let isAIEnabled = false;
+        let currentTextureUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Synthese%2B.jpg/320px-Synthese%2B.jpg'; // Textura inicial
+
+        // URL de un "Normal Map" genérico para telas.
+        // En una app real, la IA generaría un mapa específico para cada imagen.
+        // Este mapa simula hilos entrecruzados y relieve.
+        const AI_NORMAL_MAP_URL = 'https://raw.githubusercontent.com/google/model-viewer/master/packages/shared-assets/models/glTF-Sample-Models/2.0/DamagedHelmet/glTF/Default_normal.jpg'; 
+        // Usamos una textura rugosa genérica disponible online para el ejemplo
+        const FABRIC_NORMAL_MAP = "https://img.freepik.com/premium-photo/black-fabric-texture-background_1961-397.jpg"; // Placeholder para relieve
+
+        // Inicializar con la primera textura
+        window.onload = () => {
+            applyBaseTexture(currentTextureUrl, document.querySelector('.swatch'));
+        };
+
+        // 1. Aplicar la textura visual (Color/Dibujo)
+        async function applyBaseTexture(url, element) {
+            currentTextureUrl = url;
+            
+            // UI Update
+            document.querySelectorAll('.swatch').forEach(el => el.classList.remove('selected'));
+            if(element) element.classList.add('selected');
+
+            const texture = await viewer.createTexture(url);
+            const material = viewer.model.materials[0];
+            
+            if (material) {
+                material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
+                // Si la IA estaba encendida, re-aplicamos el efecto de realismo
+                if (isAIEnabled) applyAIRealism();
+            }
+        }
+
+        // 2. Función del Botón "IA"
+        function toggleAI() {
+            isAIEnabled = !isAIEnabled;
+            const material = viewer.model.materials[0];
+
+            if (isAIEnabled) {
+                // SIMULACIÓN DE PROCESAMIENTO DE IA
+                loader.style.display = 'block';
+                aiButton.innerText = "⏳ Procesando...";
+                
+                setTimeout(() => {
+                    applyAIRealism();
+                    loader.style.display = 'none';
+                    aiButton.classList.add('active');
+                    aiButton.innerText = "✨ IA: Realismo ON";
+                }, 1000); // 1 segundo de "pensar" simulado
+
+            } else {
+                // APAGAR REALISMO (Volver a plano)
+                material.pbrMetallicRoughness.normalTexture.setTexture(null);
+                material.pbrMetallicRoughness.setRoughnessFactor(0.5); // Valor por defecto
+                aiButton.classList.remove('active');
+                aiButton.innerText = "✨ IA: Realismo OFF";
+            }
+        }
+
+        // 3. La Magia Técnica (Mapas de Normales)
+        async function applyAIRealism() {
+            const material = viewer.model.materials[0];
+            
+            // A. Creamos una textura de "Normales" (Profundidad)
+            // En un caso real, aquí llamarías a una API tipo "TextureCan" o "Samplers"
+            // Aquí usamos una textura de ruido para simular el tejido de la tela
+            const normalTexture = await viewer.createTexture("https://modelviewer.dev/shared-assets/models/glTF-Sample-Models/2.0/SciFiHelmet/glTF/SciFiHelmet_Normal.png");
+            
+            // B. Aplicamos el mapa de profundidad
+            material.pbrMetallicRoughness.normalTexture.setTexture(normalTexture);
+            
+            // C. Ajustamos la rugosidad (Roughness)
+            // Las telas reales no brillan como plástico (0) ni son
